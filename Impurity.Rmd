@@ -1,0 +1,176 @@
+---
+title: "Imformation & Impurity "
+author: "黃培軒"
+date: "2017.07.22 @NCCU"
+output:
+  html_document:
+    code_folding: hide 
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+      number_sections: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#前言 ：
+#####若大家有做功課，在網路上搜尋到最多的關鍵字應該是「資訊量」與「均勻度」這兩個詞吧，這兩個看似風牛馬不相及的概念怎麼會放在一起呢？
+
+### (1)實際問題
+#### 1.1 從體育班與普通班抽一位同學出來，請問這位學生的性別是？ (猜)
+#### 1.2 同樣是28字的文章，一個以文言文、一個以白話文，誰講的事情會比較多？ (資訊量)
+#### 2.1 如何描述一個國家的職業分布是否均勻，國家是否有偏向一部份產業？ (均勻)
+
+##### 眼尖的人會發現，這三個問題中，有兩個是有「動作」，而有一個是在「描述」，而分成這兩種的用意是什麼呢？大家可以當作在看「Imformation & Impurity 」這個議題的兩個面向。換句話說，以我的觀點：「不均度」這個詞比較常在「描述」某個現況某個母體的性質、「資訊量」這個詞比較像是去量化一個行為到底值不值得、你做行為後會不會「哇～」。而會有這兩個觀點是因為他們都是用同一套公式來計算。
+
+### (2)怎麼描述下面的事情？ （我要從Impurity切入摟～
+#### 1. A學校, B學校 ：內部組成種類都是{男 , 女}，但A學校是80%, 20%, 另一間是50%, 50%（猜性別 or 描述分佈有無偏差）
+#### 2. A比賽，B比賽 ：參賽國家都一樣{a, b, c}，但A比賽是比籃球，而a, b 國家在籃球上常是常勝軍; B比賽比足球，a, b, c 三個國家旗鼓相當（猜冠軍 or 描述實力是否相當）
+#### 3. A骰子，B骰子 ：樣本空間都是{1, 2, ..., 6}，但A骰子出現的面數是有偏向某幾面，但B骰子是公正的
+
+```{r}
+library(ggplot2)
+sex = c('boy', 'boy', 'girl','girl')
+school = c('A', 'B', 'A', 'B')
+pro = c(0.8, 0.5, 0.2, 0.5)
+Data = data.frame(sex, school, pro)
+ggplot(Data, aes(x=sex, y=pro)) + geom_bar(stat = 'identity') +  facet_wrap(~school)
+
+team = c('a', 'a','b', 'b', 'c', 'c')
+game = c('A', 'B', 'A', 'B', 'A', 'B')
+pro = c(0.45, 0.33, 0.45, 0.33, 0.1, 0.33)
+Data = data.frame(team, game, pro)
+ggplot(Data, aes(x=team, y=pro)) + geom_bar(stat = 'identity') +  facet_wrap(~game)
+
+
+face = as.character(rep(1:6, each = 2))
+dice = c('A', 'B', 'A', 'B', 'A', 'B')
+pro = c(0.05, 0.16, 0.31, 0.16, 0.1, 0.16, 0.21, 0.16, 0.08, 0.16, 0.25, 0.16)
+Data = data.frame(face, dice, pro)
+ggplot(Data, aes(x=face, y=pro)) + geom_bar(stat = 'identity') +  facet_wrap(~dice)
+
+```
+
+### (3)能否用變異數解釋這情況？  [純屬個人觀點 ＋ 網路]
+####資料分成了：Ratio -> Interval -> Ordinal -> Nominal
+* #### Ratio : 絕對數值, 且運算後是有意義的, e.g. height, weight
+* #### Interval : 絕對數值，但運算後是沒意義的, e.g. 20度 並非 10度的兩倍熱
+* #### Ordinal : 相對類別, 有順序 e.g. Very like --->   Very unlike
+* #### Nominal : 相對數值, 無順序 e.g. boy, girl
+
+<center> 
+  <span style="font-family:impact; font-size:30px"> So ~~ how to define variance on Nominal type of variable ? </span>
+</center>
+
+#Impurity
+#### 亂度、資訊量，當一個 議題or事件 的Impurity越大 
+#### => 代表結果越平均，難以從這結果做出什麼結論，資訊量越少，你的腦袋越亂
+
+
+#### 直觀上的Impurity : (資訊量)文言文 v.s. 白話文  ;  (能否預期)懸疑片 v.s. 八點檔
+#### 這兩個觀點也說明了「兩個母體性質上的差異」可能代表的意思
+
+## Gini
+
+#### 假設某國人民薪水是這樣分布的，明顯看得出貧富差距
+```{r}
+par(mfrow = c(1,2))
+set.seed(1)
+x = data.frame('Salary' = 100*rexp(500, 5))
+ggplot(x, aes(Salary)) + geom_histogram()
+
+Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
+plot(Data)
+abline(0,1, col = 3)
+(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+
+```
+
+------------------------------------------------------------------------------------------------
+
+```{r}
+par(mfrow = c(1,2))
+
+set.seed(1)
+x = data.frame('Salary' = rnorm(500, 10,2)*50+200)
+ggplot(x, aes(Salary)) + geom_histogram()
+
+Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
+plot(Data)
+abline(0,1, col = 3)
+(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+
+```
+
+------------------------------------------------------------------------------------------------
+
+```{r}
+par(mfrow = c(1,2))
+
+set.seed(1)
+x = data.frame('Salary' = rbeta(500, 10,2)*50)
+ggplot(x, aes(Salary)) + geom_histogram()
+
+Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
+plot(Data)
+abline(0,1, col = 3)
+(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+
+```
+
+#### 金融的Gini 與 決策樹的 Gini 不一樣[link](http://mropengate.blogspot.tw/2015/06/ai-ch13-2-decision-tree.html)
+
+
+## Entropy
+
++ ####  $Entropy = \sum^{k}_{i=1}p_i*log_2(p_i)$
+#### why? 為何公式長這樣? [link](https://math.stackexchange.com/questions/331103/intuitive-explanation-of-entropy)
+#### 應用：使用Entropy gain 在 Decision tree 上[link](http://blog.xuite.net/metafun/life/69851478-資訊的度量-+Information+Entropy)
+
++ ####  $Cross Entropy = \sum^{k}_{i=1}p_i*log_2(q_i)$
+#### 一種比較兩群之間像不像的指標，其中對“真實情況大，預測情況小”的處罰最大
+#### 學Deep learning 的人希望他越小越好....
+
++ ####  $Maximun Entropy$
+#### Smoothing 的一種技巧，為了不要讓有值的機率是 0
+
+
+
+
+
+```{r,  message=F, warning=F}
+{y = function(p) -p*log(p)-(1-p)*log(1-p)
+curve(y, 0, 1, xlab = 'boy %', ylab = 'Entropy ', main = 'Example1 : where Entropy is the highest?')
+abline(v = 0.5, col = 2)
+points(0.5, y(0.5), col = 2, pch = 2, cex = 2)
+points(0.2, y(0.2), col = 4, pch = 2, cex = 2)
+text(0.6, y(0.5), 'A team' , col =2)
+text(0.3, y(0.2), 'B team' , col =4)}
+
+library(scatterplot3d)
+x <- seq(0, 1, 0.01)
+y <- seq(0, 1, 0.01)
+d = expand.grid(x,y)
+fdejong <- function (x, y) -(x*log(x)+y*log(y)+(1-x-y)*log(1-x-y))
+z = fdejong(d$Var1, d$Var2)
+z[z == 'NaN'] <- 0
+
+scatterplot3d(d$Var1, d$Var2, z, highlight.3d=TRUE, col.axis="blue",
+   col.grid="lightblue", pch=20, xlab = 'p1', ylab = 'p2', main = 'Example2 : where Entropy is the highest?')
+
+d[which(z == max(z))[1],]
+
+
+```
+
+
+
+
+
+
+
+
