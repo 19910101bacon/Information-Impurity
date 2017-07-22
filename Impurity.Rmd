@@ -68,7 +68,7 @@ ggplot(Data, aes(x=face, y=pro)) + geom_bar(stat = 'identity') +  facet_wrap(~di
 
 #Impurity
 #### 亂度、資訊量，當一個 議題or事件 的Impurity越大 
-#### => 代表結果越平均，難以從這結果做出什麼結論，資訊量越少，你的腦袋越亂
+#### => 代表結果越平均，難以從這結果做出什麼結論，資訊量越大，你的腦袋越亂
 
 
 #### 直觀上的Impurity : (資訊量)文言文 v.s. 白話文  ;  (能否預期)懸疑片 v.s. 八點檔
@@ -86,7 +86,7 @@ ggplot(x, aes(Salary)) + geom_histogram()
 Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
 plot(Data)
 abline(0,1, col = 3)
-(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+(Gini = 1-sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
 
 ```
 
@@ -102,7 +102,7 @@ ggplot(x, aes(Salary)) + geom_histogram()
 Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
 plot(Data)
 abline(0,1, col = 3)
-(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+(Gini = 1-sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
 
 ```
 
@@ -118,20 +118,21 @@ ggplot(x, aes(Salary)) + geom_histogram()
 Data = data.frame('Proportion' = seq(0, 1, length.out = 501)[-1], 'Salary' = cumsum(sort(x$Salary))/sum(x$Salary) )
 plot(Data)
 abline(0,1, col = 3)
-(Gini = sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
+(Gini = 1-sum(0.002*(cumsum(sort(x$Salary))/sum(x$Salary)))/0.5)
 
 ```
 
 #### 金融的Gini 與 決策樹的 Gini 不一樣[link](http://mropengate.blogspot.tw/2015/06/ai-ch13-2-decision-tree.html)
+#### 亂度越大 <=> 越均勻 <=> 貧富差距越小 <=> 金融Gini 越小
 
 
 ## Entropy
 
-+ ####  $Entropy = \sum^{k}_{i=1}p_i*log_2(p_i)$
++ ####  $Entropy = -\sum^{k}_{i=1}p_i*log_2(p_i)$
 #### why? 為何公式長這樣? [link](https://math.stackexchange.com/questions/331103/intuitive-explanation-of-entropy)
 #### 應用：使用Entropy gain 在 Decision tree 上[link](http://blog.xuite.net/metafun/life/69851478-資訊的度量-+Information+Entropy)
 
-+ ####  $Cross Entropy = \sum^{k}_{i=1}p_i*log_2(q_i)$
++ ####  $Cross Entropy = -\sum^{k}_{i=1}p_i*log_2(q_i)$
 #### 一種比較兩群之間像不像的指標，其中對“真實情況大，預測情況小”的處罰最大
 #### 學Deep learning 的人希望他越小越好....
 
